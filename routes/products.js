@@ -1,57 +1,43 @@
-var express= require('express');
-const faker= require('faker');
+var express = require('express');
+const productServices =require ("../services/servicesProducts");
+const { validatorHandler } = require('../middleware/validator.handler');
 const router= express.Router();
-const productServices=require('../services/servicesProducts');
+const{ schemaProductCreate, schemaProductGet, schemaProductUpdate}= require('../schema/schemaProduct');
 
-router.get('/', function(req, res){
-    // const products=[];
-    // const {size}=req.query;
-    // const limit=size || 5;
-    // for (let index=0; index<limit; index++){
-    //     products.push ({
-    //         index,
-    //         name: faker.commerce.productName(),
-    //         price: parseInt(faker.commerce.price(),10),
-    //         image: faker.image.imageUrl()
-    //     })
-    // }
-    const products=productServices.getAllProducts(req,res);
+// router.get('/', async function(req, res){  //llamo a la función
+//   const products= await productServices.getAllProducts(req,res); //me quedo en espera de la respuesta.
+//   res.json(products);
+// });
+//vamos a provocar un error
+router.get('/', async function(req, res,next){  //añado una llamada al middleware con next
+  try {
+    const products= await productServices.getAllProducts(req,res); //el error debeo generarlo en sevices
     res.json(products);
-})
-router.get('/:id', function(req, res){
-    // const {id}=req.params;
-    // res.json({
-    //     id,
-    //     'name': 'ratón',
-    //     'price': 21,
-    //     'category':'tecnology'
-    // })
-    const oneProduct=productServices.getOneProduct(req,res);
+
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.post('/', validatorHandler(schemaProductCreate, 'body'),
+ async function(req, res){
+ const createProduct= await productServices.createNewProduct(req,res);
+ return createProduct;
 })
 
-router.post('/', function(req, res){
-    // const body=req.body;
-    // res.json({
-    //     "op": "post",
-    //     "data": body
-    // })
-    const newProduct=productServices.createNewProduct(req, res);
+router.patch('/:id', async function(req, res){
+  const updatedProduct= await productServices.updateProduct(req,res);
+  res.json(updatedProduct);
+
+})
+router.delete('/:id', async function(req, res){
+ const deletedProduct=await productServices.deleteProduct(req,res);
+ return deletedProduct;
 })
 
-router.delete('/:id', function(req, res){
-    const {id}=req.params;
-    res.json({
-        "op": "delete",
-        id
-    })
-})
-router.patch('/:id', function(req, res){
-    const {id}=req.params;
-    const body=req.body;
-    res.json({
-        "op": "UPDATE",
-        id,
-        body
-    })
-})
-module.exports=router; 
+router.get('/:id', validatorHandler(schemaProductGet, 'params') , async function(req, res){
+   const getOneProduct= await productServices.getOneProduct(req,res);
+   return getOneProduct;
+});
+
+module.exports = router;
